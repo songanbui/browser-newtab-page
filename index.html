@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<!--
+
+    Author:        Song An based on Twily work (http://twily.info/) - 2014
+    Compatibility: Mozilla Firefox, Google Chrome
+    Search Useage: "artist!i" will find images for "artist"
+
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+<title>New Tab</title>
+
+<style type="text/css">
+html,body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    font-family: "Droid Sans", "Liberation Sans", "DejaVu Sans", "Segoe UI", Sans; font-size: 10pt;
+    background: #EAEAEA;
+}
+ul, li { list-style-type: none; margin: 0; padding: 0; }
+
+a, a:link, a:visited { color: #444; text-decoration: none; }
+a:hover, a:active    { color: #222; }
+
+.center { position: relative; width: 100%; height: 100%; }
+    .center .content {
+        margin: auto; overflow: auto; width: 600px; height: 300px;
+        position: absolute; left: 0; top: 0; right: 0; bottom: -50px; /* search box align */
+        text-align: center; opacity: 1; transition: .3s ease-out;
+    }
+
+#q {
+    width: 500px;
+    background: #FFF; color: #222;
+    border: 1px solid #EAEAEA; border-radius: 1px;
+    padding: 8px 8px; font-size: 12pt;
+}
+    #q:focus { border-color: #87A9E2; }
+
+#more {
+    background: #CECECE; color: #FFF; border-radius: 1px;
+    cursor: pointer; display: inline-block;
+    font-size: 18pt; line-height: 20px; /* vertical align "+" button */
+    width: 24px; height: 24px;
+    text-align: center; font-weight: bold;
+}
+    #help {
+        display: inline-block; width: 320px; cursor: default;
+        font-family: "Droid Sans Mono", "Liberation Sans Mono", "DejaVu Sans Mono", "Consolas", "Lucida Console", monospace;
+        background: #CECECE; color: #444;
+        padding: 8px; text-align: left; border-radius: 1px;
+        opacity: 0; transition: .2s ease-out;
+    }
+
+#menu {
+    position: fixed; bottom: -64px; left: 0; z-index: 11;
+    width: 100%; height: 128px;
+    background: transparent; color: #444; cursor: default;
+    transition: .2s ease-out;
+}
+    #menu:hover            { bottom: 0; }
+    #mnu                   { height: 64px; line-height: 32px; }
+
+    #grip                  { width: 100%; height: 64px; background: transparent; }
+
+    #menu ul               { display: inline-table; position: relative; list-style: none; }
+    #menu label            { padding: 0; display: inline-block; font-weight: bold; width: 200px; } /* menu title width */
+
+    #menu ul li            { float: left; border-radius: 2px; height: 64px; }
+    #menu ul li:hover      { background: #CECECE; color: #222; }
+    #menu ul li:hover > ul { visibility: visible; bottom: 100%; opacity: 1; transition: .2s ease-out; }
+    #menu ul li a          { display: block; white-space: nowrap; padding: 0 10px; }
+
+    #menu ul ul            {
+        display: block; visibility: hidden; width: 200px;
+        position: absolute; bottom: 200%;
+        background: transparent;
+        transition: .3s ease-out; opacity: 0;
+    }
+
+    #menu ul ul li         { width: 100%; height: 32px; text-align: left; } /* menu links align */
+    #menu ul ul li:hover   { background: #CECECE; }
+
+    #menu img {
+        width: 16px; height: 16px;
+        position: relative; top: 3px;
+        padding-right: 3px; visibility: hidden;
+    }
+</style>
+
+<script type="text/javascript" language="javascript">
+var $=function(id) { return document.getElementById(id); };
+
+
+var search=[ // Search engines
+    ["",    "https://startpage.com/do/search?query="],                  // Startpage (Default)
+    ["!s",    "https://startpage.com/do/search?query="],                // Startpage (Default)
+    ["!i",  "https://startpage.com/do/search?cat=pics&query="],         // Startpage Images
+    ["!g",  "https://www.google.com/#q="],                              // Google
+    ["!gi",  "https://www.google.com/search?tbm=isch&q="],              // Google Images
+    ["!m",  "https://maps.google.com/?q="],                             // Google Maps
+    ["!t",  "https://translate.google.com/#fr/en/"],                    // Google Translate
+    ["!y",  "https://www.youtube.com/results?search_query="]           // YouTube
+
+];
+
+var menus=[ // Menu Titles ["Title", width(px)],                                                   /* menu width */
+    ["Business",           300],                                        // menu-1
+    ["Entertainment",          300],                                        // menu-2
+    ["Shopping",  300],                                        // menu-3
+    //["Other",          200],                                        // menu-4
+];
+
+var showFavicon = true;                                             // Enable/Disable Favicons
+
+// Link setup (separate with ["", "", ""],)
+// Format: ["Name", "URL", "Custom Favicon"],
+var links=[
+    // Business -           menu-1
+    ["Banque Populaire",                "http://www.rivesparis.banquepopulaire.fr/portailinternet/Pages/default.aspx",                      ""],
+    ["Thomson Reuters Webmail",         "https://webmail.thomsonreuters.com/CookieAuth.dll?GetLogon?curl=Z2F&reason=0&formdir=1",                  "https://webmail.thomsonreuters.com/CookieAuth.dll?GetPic?formdir=1&image=favicon.ico"],
+    ["Google Mail",                     "https://mail.google.com/mail/u/0/#inbox",                 ""],
+
+    ["",                                "",                                     ""],
+
+    // Entertainment -          menu-2
+    ["/v/ - Video Games",               "https://boards.4chan.org/v/catalog",   "http://s.4cdn.org/image/favicon-ws.ico"],
+    ["/g/ - Technology",                "https://boards.4chan.org/g/catalog",   "http://s.4cdn.org/image/favicon-ws.ico"],
+    ["Steam",                           "http://store.steampowered.com/",   ""],
+    ["O'Gaming TV LoL",                 "http://www.ogaming.tv/stream/ogaming-tv-lol",                  "http://www.ogaming.tv/sites/ogaming.tv/files/favicon_0_0.ico"],
+    ["Youtube",                         "https://www.youtube.com/feed/subscriptions",                  ""],
+    ["Twitter",                         "https://facebook.com",                  ""],
+    ["Facebook",                        "https://twitter.com",                  ""],
+    ["InoReader",                        "https://www.inoreader.com/#all_articles",                  ""],
+
+    ["",                                "",                                     ""],
+
+    // Shopping -  menu-3
+    ["Darty",                           "http://darty.com/",                   ""],
+    ["Rue Montgallet",                  "http://www.rue-montgallet.com/",                   ""],
+    ["GrosBill",                        "https://grosbill.com/",           ""],
+    ["LDLC",                            "http://www.ldlc.com/",               "http://media.ldlc.com/v3/img/favicon.ico"],
+    ["Amazon",                          "https://amazon.fr/",              ""],
+
+    ["",                                "",                                     ""],
+
+/*
+    // Other -          menu-4
+
+    */
+];
+
+
+var ss="";
+function init() {
+    for(var i=0;i<search.length;i++) if(search[i][0]=="") ss=search[i][1];
+    if(ss=="") { alert("Error: Missing default search engine!"); }
+
+    build();
+
+    $('q').value="";
+    $('q').focus();
+}
+
+function build() { // Build menus
+    $('mnu').innerHTML="";
+
+    for(var i=0;i<menus.length;i++) { // Menu titles
+        $('mnu').innerHTML+="<li><label>"+menus[i][0]+"</label>\n<ul id=\"mnu_"+(i+1)+"\"></ul></li>";
+        $('mnu_'+(i+1)).style.width=menus[i][1]+"px";
+    }
+
+    var m=1,skip=false;
+    for(var i=0;i<links.length;i++) { // Menu links
+        if(links[i][0]=="" && links[i][1]=="") { skip=true; }
+
+        if(!skip) {
+            var printimg="";
+
+            if(showFavicon) {
+                var favicon;
+                if(links[i][2]!="") favicon=links[i][2];
+                else                favicon=getFavicon(links[i][1]);
+
+                printimg="<img id=\"img_"+i+"\" src=\""+favicon+"\""+" onload=\"javascript:this.style.visibility='inherit';\" /> ";
+            }
+
+            $('mnu_'+m).innerHTML+="<li><a href=\""+links[i][1]+"\" target=\"_self\">"+printimg+links[i][0]+"</a></li>";
+        } else {
+            skip=false; m++;
+        }
+    }
+}
+
+function handleQuery(e,q) { // Handle search query
+    var key=e.keyCode || e.which;
+
+    if(key==13) { // enter
+        if(q.lastIndexOf("!")!=-1) {
+            var x=q.lastIndexOf("!"),found=false;
+            
+            for(var i=0;i<search.length;i++) {
+                if(search[i][0]==q.substr(x)) { // Find "!?"
+                    found=true; window.location=search[i][1]+q.substr(0,x).replace(/&/g,"%26");
+                }
+            }
+            if(!found) { // Invalid "!?", use default
+                window.location=ss+q.substr(0,x).replace(/&/g,"%26");
+            }
+        } else { // "!?" where not specified, use default
+            window.location=ss+q.replace(/&/g,"%26");
+        }
+    }
+}
+
+var m=false;
+function toggle() { // Toggle help
+    m=!m;
+
+    if(m) {
+        $('help').style.opacity=1;
+        $('more').innerHTML="-";
+    } else {
+        $('help').style.opacity=0;
+        $('more').innerHTML="+";
+    }
+
+    $('q').focus();
+}
+
+function fade(x) {
+    if(x==1) {
+        $('form').style.top="-100px";
+        $('form').style.opacity=0;
+        if(m) toggle();
+    } else {
+        $('form').style.top="0px";
+        $('form').style.opacity=1;
+        $('q').focus();
+    }
+}
+
+function getFavicon(url) {
+    var l=document.createElement("a");
+    l.href=url;
+
+    return l.protocol+"//"+l.hostname+"/favicon.ico";
+}
+</script>
+</head>
+<body onload="javascript:init();">
+
+<div class="center">
+    <div class="content" id="form">
+        <input type="text" id="q" value="" placeholder="Search..." onkeypress="javascript:handleQuery(event,this.value);" />
+        <br /><br />
+        <div id="more" onclick="javascript:toggle();">+</div>
+        <br /><br />
+        <div id="help">
+            <ul>
+                <li><b>!s</b> = Search Startpage (Default)</li>
+                <li><b>!i</b> = Search Startpage Images</li>
+                <li><b>!g</b> = Search Google</li>
+                <li><b>!gi</b> = Search Google Images</li>
+                <li><b>!m</b> = Search Google Maps</li>
+                <li><b>!t</b> = Search Google Translate</li>
+                <li><b>!y</b> = Search YouTube</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<center>
+    <div id="menu" onmouseover="javascript:fade(1);" onmouseout="javascript:fade(0);">
+        <div id="grip"></div>
+        <ul id="mnu"></ul>
+    </div>
+</center>
+
+</body>
+</html>
